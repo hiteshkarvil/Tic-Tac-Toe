@@ -1,0 +1,87 @@
+Here is the HTML code used for TicTacToe Game
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic Tac Toe</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="game-container">
+        <h1 class="title">Tic Tac Toe</h1>
+
+        <div class="players">
+            <span><strong>Player X:</strong> Alice</span> &nbsp;&nbsp;&nbsp;
+            <span><strong>Player O:</strong> Bob</span>
+        </div>
+
+        <div id="current-turn">Current Turn: X</div>
+
+        <!-- Game Board -->
+        <div class="board">
+            {% for row in range(3) %}
+                <div class="row">
+                    {% for col in range(3) %}
+                        <button class="cell {% if board[row][col] == 'X' %}x{% elif board[row][col] == 'O' %}o{% endif %}" 
+                                id="cell-{{ row }}-{{ col }}" onclick="makeMove({{ row }}, {{ col }})">
+                            {{ board[row][col] }}
+                        </button>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        </div>
+
+        <button onclick="resetGame()">Restart Game</button>
+        <div id="game-status"></div>
+    </div>
+
+    <script>
+        let currentPlayer = "X"; // Start with X
+
+        // Function to handle a move
+        function makeMove(row, col) {
+            fetch(`/play/${row}/${col}`, { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error); // Show error if the move is invalid or game is over
+                    } else {
+                        updateBoard(data.board); // Update the UI with the new board
+                        if (data.winner) {
+                            document.getElementById('game-status').innerText = `${data.winner} wins!`;
+                        } else if (data.draw) {
+                            document.getElementById('game-status').innerText = "It's a draw!";
+                        } else {
+                            // Update current turn
+                            currentPlayer = currentPlayer === "X" ? "O" : "X";
+                            document.getElementById('current-turn').innerText = `Current Turn: ${currentPlayer}`;
+                        }
+                    }
+                });
+        }
+
+        // Update the board UI
+        function updateBoard(board) {
+            for (let row = 0; row < 3; row++) {
+                for (let col = 0; col < 3; col++) {
+                    document.getElementById(`cell-${row}-${col}`).innerText = board[row][col];
+                }
+            }
+        }
+
+        // Reset the game
+        function resetGame() {
+            fetch('/reset', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    updateBoard(data.board);
+                    document.getElementById('game-status').innerText = '';
+                    currentPlayer = "X";
+                    document.getElementById('current-turn').innerText = 'Current Turn: X';
+                });
+        }
+    </script>
+</body>
+</html>
